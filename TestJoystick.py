@@ -9,15 +9,24 @@ print(J.get_name())
 
 while True:
     time.sleep(0.5)
+    axes = []
     for k in range(J.get_numaxes()):
         pygame.event.pump()
-        print(J.get_axis(k))
+        axes.append(J.get_axis(k))
+##    print("{}".format(axes))
 
+    buttons = []
     for k in range(J.get_numbuttons()):
         pygame.event.pump()
-        print(J.get_button(k))
-
+        buttons.append(J.get_button(k))
+    print("{}".format(buttons))
+    
+    hats = []
+    print("Number of hats is {}".format(J.get_numhats()))
     for k in range(J.get_numhats()):
         pygame.event.pump()
-        print(J.get_hat(k))
+        hats.append(J.get_hat(k))
+    print("{}".format(hats))
+        
+
 
