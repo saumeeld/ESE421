@@ -1,7 +1,4 @@
-//Velocity Estimation
-// 10/22/18
-
-// Week 4: Heading Control (w/ GPS + IMU)
+// Week 4: Heading Control (w/ GPS + IMU + Camera)
 
 // Libraries included:
 #include <SPI.h>
@@ -9,14 +6,26 @@
 #include <Adafruit_GPS.h>
 #include <Adafruit_Sensor.h>
 #include <Servo.h>
+#include <Wire.h>
+
+//constants
+float MILLISECONDS_TO_SECONDS = .001;
 
 // global variables
 // (yucky but needed to make i2c interrupts work later)
 float gpsLat;
 float gpsLon;
-float gpsV;
-float gpsPSi;
+static float psiGPS;
 int gpsNSat;
+float pingDistanceCM = 0.0;
+
+byte piCommand;
+float piE = 3.1416;
+float sqrtN = 1.0;
+word fiveK = 5000;
+byte x = 1;
+byte xsq = 1;
+byte piData[2];
 
 // DEFINE PIN LAYOUT
 
@@ -29,22 +38,34 @@ int gpsNSat;
 #define LSM9DS1_XGCS 49 //BDK-mega
 #define LSM9DS1_MCS 47 //BDK-mega
 #define GYRO_Z_BIAS 1 //1 dps bias
-static float psiEst = 0;
+
+//Define comm. address with Raspberry Pi
+#define SLAVE_ADDRESS 0x04
 
 // Define pins for ping sensor
 #define pingTrigPin 23 // ping sensor trigger pin (output from Arduino)
 #define pingEchoPin 25 // ping sensor echo pin (input to Arduino)
 #define pingGrndPin 27 // ping sensor ground pin (use digital pin as ground)
 #define motorPin 8 //PWM for motor
-int delta_tms = 1000; //delay
-float pingDistanceCM = 0.0;
+
+// Define Taus for Complementary Filters
+#define TAU_PSI 1
+
+// Define delta time for integration
+#define LOOP_TIME 1000
 
 // Tell sensor library which pins for accel & gyro data
 Adafruit_LSM9DS1 lsm = Adafruit_LSM9DS1(LSM9DS1_XGCS, LSM9DS1_MCS);
 
+// Define Servo Pin
 #define STEERING_SERVO_PIN 7
 Servo steeringServo;
-int motorPWM = 175;
+
+// Initialize Motor PWM
+byte motorPWM = 175;
+
+// Declare Data from Pi
+byte psiCamera;
 
 // connect GPS to Hardware Serial1 (Serial0 is for USB)
 // Serial1 is pins 18 & 19 on Mega
@@ -53,7 +74,12 @@ Adafruit_GPS GPS(&Serial1);
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Heading and Velocity Control");
+  Serial.println("Heading Control");
+
+  //I2C stuff
+  Wire.begin(SLAVE_ADDRESS);
+  Wire.onReceive(getCameraData);
+  Wire.onRequest(sendDataI2C);
 
   // Define pins for ping sensor
   pinMode(pingGrndPin, OUTPUT); digitalWrite(pingGrndPin, LOW);
@@ -97,66 +123,25 @@ SIGNAL(TIMER0_COMPA_vect) {
 
 //////////////////////////////////////////////////////////////////
 void loop() {
-
-  //  Get the gyro data
-  lsm.read();  /* ask it to read in the data */
-  sensors_event_t a, m, g, temp;
-  lsm.getEvent(&a, &m, &g, &temp);
-
-  // Read yaw rate from gyro
-  Serial.print("\tZ: "); Serial.print(g.gyro.z); Serial.println(" dps");
-  float gyroBias = 1;
-  float accelXBias = 1;
-  static float yawRate = 0;
-  static float accelX = 0;
-  yawRate = g.gyro.z - gyroBias;
-  velocityX = a.acceleration.x - accelXBias;
-
-  Serial.print("yawRate: " );
-  Serial.println(g.gyro.z);
-  Serial.print("accelX: " );
-  Serial.println(a.acceleration.x);
-
-  //  Parse GPS when available (set by interrupt)
-  if (GPS.newNMEAreceived())
-  {
-    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-    {
-      Serial.println("GPS Parse Fail");
-    }
-    else
-    {
-      gpsLat = (GPS.latitudeDegrees - 40.0);
-      gpsLon = (GPS.longitudeDegrees + 75.0);
-      gpsNSat = GPS.satellites;
-      gpsPSi = GPS.angle;
-      gpsV = GPS.speed;
-
-      Serial.print("GPS Satellites: ");
-      Serial.println(GPS.satellites);
-      Serial.print("gpsPSi: ");
-      Serial.println(GPS.angle);
-      Serial.print("gpsV: ");
-      Serial.println(GPS.speed);
-    }
-  }
-
+  
+  //Initialize Estimation Variables
+  static float psiEst = 0;
+  
   // Emergency stop code
-  getPingDistanceCM();
-  if (pingDistanceCM < 35) {
-    analogWrite(motorPin, 0);
-  }
-  else {
-    analogWrite(motorPin, motorPWM);
-  }
+  emergencyStopIfNecessary();
+
+  float yawRate = getIMUData();
 
   // Correct vehicle heading if not straight
-  estimateHeading(yawRate, gpsPSi, delta_tms, psiEst);
+  //psiEst = estimateHeading(yawRate, psiCamera, LOOP_TIME, psiEst);
+  psiEst += yawRate * LOOP_TIME;
   fixHeading(psiEst, steeringServo);
+  
+  Serial.print("The estimated Psi (psiEst) is : ");
+  Serial.println(psiEst);
 
-  //  wait delta_tms milliseconds
-  Serial.println();
-  delay(delta_tms);
+  //  wait updateTime milliseconds
+  delay(LOOP_TIME);
 }
 
 float constrainAngle(float angle) {
@@ -167,20 +152,8 @@ float constrainAngle(float angle) {
 }
 
 // Complementarty filter implementation to estimate vehicle heading
-void estimateHeading(float yawRate, float gpsPSi, int delta_tms, float psiEst) {
-  float tau = 1;
-  static float psiIMU = 0;
-  static float psiX = 0;
-  psiIMU = constrainAngle((.001 * delta_tms) * yawRate);
-  Serial.print("psiIMU: ");
-  Serial.println(psiIMU);
-  // Remember to add constraint to gpsPSi - psiX to stop dramatic jumps
-  psiX += (.001 * delta_tms) * ((1 / tau) * (gpsPSi - psiX));
-  Serial.print("psiX: ");
-  Serial.println(psiX);
-  psiEst = psiIMU + psiX;
-  Serial.print("psiEst: ");
-  Serial.println(psiEst);
+float estimateHeading(float yawRate, byte psiCamera, int loopTime, float psiEst) {
+  return complementaryFilter(psiCamera, yawRate, tauPsi, loopTime, psiEst);
 }
 
 // Correct heading using proportional feedback
@@ -194,53 +167,121 @@ void fixHeading(float psiEst, Servo steeringServo) {
   Serial.println(servo_actual);
 }
 
-//Complementary filter implementation to estimate vehicle velocity
-void estimateVelocity(float gpsV, float Vsc int delta_tms, float VEst) {
-  //NEED TO FIGURE OUT CORRECT EQUATION HERE 
-  //DOUBLE CHECK HOW TO GET STATIC CALIBRATION
-  VEst += (1 / tau) * (gpsV - 2 * Vsc - VEst);
+
+// Function to estimate a value a low frequency input and high frequency rate input
+void complementaryFilter(float lowFrequencyInput, float highFrequencyInputRate, float tau, int loopTime, float estimate) {
+  float deltaEstimate = (1 / tau) * (lowFrequencyInput + tau * highFrequencyInputRate);
+  estimate += deltaEstimate * loopTime * MILLISECONDS_TO_SECONDS;
+  return estimate;
 }
 
-// Correct velocity using proportional feedback
-void fixVelocity(float VEst, int motorPWM) {
-  // NEED EQUATION HERE THAT DETERMINES MOTORPWM BASED ON ESTIMATED VELOCITY
-  analogWrite(motorPin, constrain(motorPWM, 0, 250));
-  Serial.print("Motor PWM: " );
-  Serial.println(motorPWM);
+float getIMUData() {
+  //  Get the IMU data
+  lsm.read();  /* ask it to read in the data */
+  sensors_event_t a, m, g, temp;
+  lsm.getEvent(&a, &m, &g, &temp);
+  // Read yaw rate from IMU
+  Serial.print("\tZ: "); Serial.print(g.gyro.z); Serial.println(" dps");
+  float gyroBias = 1;
+  float yawRate;
+  yawRate = g.gyro.z - gyroBias;
+  Serial.print("yawRate: " );
+  Serial.println(g.gyro.z);
+  return yawRate;
+}
+
+float getGPSData() {
+  //  Parse GPS when available (set by interrupt)
+  if (GPS.newNMEAreceived())
+  {
+    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+    {
+      Serial.println("GPS Parse Fail");
+    }
+    else
+    {
+      gpsLat = (GPS.latitudeDegrees - 40.0);
+      gpsLon = (GPS.longitudeDegrees + 75.0);
+      gpsNSat = GPS.satellites;
+      psiGPS = GPS.angle;
+      Serial.print("psiGPS: ");
+      Serial.println(GPS.angle);
+      Serial.print("GPS Satellites: ");
+      Serial.println(GPS.satellites);
+    }
+  }
+  return psiGPS;
+}
+
+// Function to manage collision distance
+void emergencyStopIfNecessary() {
+  getPingDistanceCM();
+  if (pingDistanceCM < 35) {
+    analogWrite(motorPin, 0);
+  }
+  else {
+    analogWrite(motorPin, motorPWM);
+  }
 }
 
 // Function to retrieve pin distance
-void getPingDistanceCM()
-{
-  // 3000 us timeout implies maximum distance is 51cm
-  // but in practice, actual max larger?
+void getPingDistanceCM() {
+  // 3000 us timeout implies maximum distance is 51cm but in practice, actual max larger?
   const long timeout_us = 3000;
-
-  // pingTrigPin = trigger pin
-  // pingEchoPin = echo pin
   // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
   // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
-
   digitalWrite(pingTrigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(pingTrigPin, HIGH);
   delayMicroseconds(5);
   digitalWrite(pingTrigPin, LOW);
-  //
   // The echo pin is used to read the signal from the PING))): a HIGH
   // pulse whose duration is the time (in microseconds) from the sending
   // of the ping to the reception of its echo off of an object.
-  //
   unsigned long echo_time;
   echo_time = pulseIn(pingEchoPin, HIGH, timeout_us);
-  if (echo_time == 0)
-  {
+  if (echo_time == 0) {
     echo_time = timeout_us;
   }
   // return the distance in centimeters
   // distance = (10^-6) * (echo_time_us) * (speed of sound m/s) * (100 cm/m) / 2
   // divide by 2 because we measure "round trip" time for echo
-  // (0.000001 * echo_time_us * 340.0 * 100.0 / 2.0)
-  // = 0.017*echo_time
+  // (0.000001 * echo_time_us * 340.0 * 100.0 / 2.0) = 0.017*echo_time
+  
   pingDistanceCM = constrain(0.017 * echo_time, 5.0, 50.0);
+}
+
+void getCameraData(int nPoints) {
+  piCommand = Wire.read();
+
+  // if Pi is sending data, parse it into the two command variables
+  if (piCommand == 255) {
+    psiCamera = Wire.read();
+  }
+
+  // now clear the buffer, just in case
+  while (Wire.available()) {
+    Wire.read();
+  }
+
+  return psiCamera;
+}
+
+void sendDataI2C(void) {
+  //  if (piCommand == 1) {
+  //    float dataBuffer[2];
+  //    dataBuffer[0] = piE;
+  //    dataBuffer[1] = sqrtN;
+  //    Wire.write((byte*) &dataBuffer[0], 2 * sizeof(float));
+  //    Serial.println("sending floats");
+  //  }
+  //  else if (piCommand == 2) {
+  //    byte dataBuffer[4];
+  //    dataBuffer[0] = fiveK / 256;
+  //    dataBuffer[1] = (fiveK - 256 * dataBuffer[0]);
+  //    dataBuffer[2] = x;
+  //    dataBuffer[3] = xsq;
+  //    Wire.write(&dataBuffer[0], 4);
+  //    Serial.println("sending bytes");
+  //  }
 }
