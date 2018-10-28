@@ -2,11 +2,11 @@
 
 // Libraries included:
 #include <SPI.h>
+#include <Servo.h>
+#include <Wire.h>
 #include <Adafruit_LSM9DS1.h>
 #include <Adafruit_GPS.h>
 #include <Adafruit_Sensor.h>
-#include <Servo.h>
-#include <Wire.h>
 
 //constants
 float MILLISECONDS_TO_SECONDS = .001;
@@ -59,10 +59,11 @@ Adafruit_LSM9DS1 lsm = Adafruit_LSM9DS1(LSM9DS1_XGCS, LSM9DS1_MCS);
 
 // Define Servo Pin
 #define STEERING_SERVO_PIN 7
+#define SERVO_RIGGING_ANGLE 54
 Servo steeringServo;
 
 // Initialize Motor PWM
-byte motorPWM = 175;
+byte motorPWM = 125;
 
 // Declare Data from Pi
 byte psiCamera;
@@ -90,7 +91,7 @@ void setup() {
 
   // Define pins for steering servo
   steeringServo.attach(STEERING_SERVO_PIN);
-  steeringServo.write(90);
+  steeringServo.write(SERVO_RIGGING_ANGLE);
 
   // IMU STUFF
   // Initialize gyro / mag / accel
@@ -134,7 +135,7 @@ void loop() {
 
   // Correct vehicle heading if not straight
   //psiEst = estimateHeading(yawRate, psiCamera, LOOP_TIME, psiEst);
-  psiEst += yawRate * LOOP_TIME;
+  psiEst += yawRate * LOOP_TIME*MILLISECONDS_TO_SECONDS;
   fixHeading(psiEst, steeringServo);
   
   Serial.print("The estimated Psi (psiEst) is : ");
@@ -153,15 +154,15 @@ float constrainAngle(float angle) {
 
 // Complementarty filter implementation to estimate vehicle heading
 float estimateHeading(float yawRate, byte psiCamera, int loopTime, float psiEst) {
-  return complementaryFilter(psiCamera, yawRate, tauPsi, loopTime, psiEst);
+  return complementaryFilter(psiCamera, yawRate, TAU_PSI, loopTime, psiEst);
 }
 
 // Correct heading using proportional feedback
 void fixHeading(float psiEst, Servo steeringServo) {
-  float k_heading = 1.5;
-  float servo_rigging_angle = 54;
-  float servo_angle_deg = servo_rigging_angle - k_heading * psiEst;
-  float servo_actual = constrain(servo_angle_deg, servo_rigging_angle - 50, servo_rigging_angle + 50);
+  float k_heading = 0.6;
+  // TODO: DOULE CHECK LOGIC 
+  float servo_angle_deg = SERVO_RIGGING_ANGLE + k_heading * psiEst;
+  float servo_actual = constrain(servo_angle_deg, SERVO_RIGGING_ANGLE - 50, SERVO_RIGGING_ANGLE + 50);
   steeringServo.write(servo_actual);
   Serial.print("Servo angle " );
   Serial.println(servo_actual);
@@ -169,7 +170,7 @@ void fixHeading(float psiEst, Servo steeringServo) {
 
 
 // Function to estimate a value a low frequency input and high frequency rate input
-void complementaryFilter(float lowFrequencyInput, float highFrequencyInputRate, float tau, int loopTime, float estimate) {
+float complementaryFilter(float lowFrequencyInput, float highFrequencyInputRate, float tau, int loopTime, float estimate) {
   float deltaEstimate = (1 / tau) * (lowFrequencyInput + tau * highFrequencyInputRate);
   estimate += deltaEstimate * loopTime * MILLISECONDS_TO_SECONDS;
   return estimate;
@@ -186,7 +187,7 @@ float getIMUData() {
   float yawRate;
   yawRate = g.gyro.z - gyroBias;
   Serial.print("yawRate: " );
-  Serial.println(g.gyro.z);
+  Serial.println(yawRate);
   return yawRate;
 }
 
