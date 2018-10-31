@@ -10,6 +10,8 @@ import pygame
 import time
 import picamera
 
+ts = time.gmtime()
+print(time.strftime("%c", ts))
 #
 # 1 = command byte to request first data block from Arduino
 # 8 = number of bytes (one 4-byte float + one 2-byte word)
@@ -97,7 +99,6 @@ def convertHatToNumber(hat_tuple):
         return 3
     
     return 4 #unrecognized hat
-
 def convertButtonToNumber(buttons):
     for i in range(J.get_numbuttons()):
         if buttons[i] == 1:
@@ -105,8 +106,10 @@ def convertButtonToNumber(buttons):
     return 20  
 
 def takePicture():
-    imgName = 'Picture' + str(picturesTaken) + '.jpg' 
+    ts = time.gmtime()
+    imgName = '../PennParkImages/' + str(time.strftime("%c", ts)) + '.jpg' 
     camera.capture(imgName)
+    print('Image ' + imgName + ' Captured!')
 
 #
 # now loop thru reading from and writing to Arduino
@@ -140,8 +143,8 @@ while True:
         buttons.append(J.get_button(k))
     arduinoButtonRepresentation = [convertButtonToNumber(buttons)]
     if arduinoButtonRepresentation[0] == 7:
-        take_picture() #When button is z
-        picturesTaken++
+        takePicture() #When button is z
+        picturesTaken += 1
 
 
     arduinoHatRepresentation = [] #should be only one number
