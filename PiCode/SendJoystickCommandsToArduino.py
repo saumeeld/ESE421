@@ -8,6 +8,7 @@ import smbus
 import time
 import pygame
 import time
+import picamera
 
 #
 # 1 = command byte to request first data block from Arduino
@@ -101,7 +102,12 @@ def convertButtonToNumber(buttons):
     for i in range(J.get_numbuttons()):
         if buttons[i] == 1:
             return i
-    return 20    
+    return 20  
+
+def takePicture():
+    imgName = 'Picture' + str(picturesTaken) + '.jpg' 
+    camera.capture(imgName)
+
 #
 # now loop thru reading from and writing to Arduino
 #
@@ -111,6 +117,12 @@ pygame.joystick.init()
 J = pygame.joystick.Joystick(0)
 J.init()
 print(J.get_name())
+
+#initialize cameras
+camera = picamera.PiCamera()
+photoHeight = 540
+camera.resolution = (16*photoHeight/9, photoHeight)
+picturesTaken = 0
 
 while True:
     time.sleep(0.1)
@@ -127,6 +139,10 @@ while True:
         pygame.event.pump()
         buttons.append(J.get_button(k))
     arduinoButtonRepresentation = [convertButtonToNumber(buttons)]
+    if arduinoButtonRepresentation[0] == 7:
+        take_picture() #When button is z
+        picturesTaken++
+
 
     arduinoHatRepresentation = [] #should be only one number
     for k in range(J.get_numhats()):
