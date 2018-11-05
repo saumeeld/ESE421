@@ -1,20 +1,23 @@
-import picamera
+#!/usr/bin/python
+# 
+# # import picamera
+
 import cv2
 import numpy as np
 import math
-# set up the camera
-# default photo seems to be 1920 x 1080
-# half of that keeps things more manageable for on-screen debugging
-#
-camera = picamera.PiCamera()
-photoHeight = 540
-camera.resolution = (16*photoHeight/9, photoHeight)
-#
-# captue an image and read it back in
-# (Do this because picamera does not play nice with openCV?)
-#
-camera.capture('blackRoad.jpg')
-imgColor = cv2.imread('blackRoad.jpg')
+# # set up the camera
+# # default photo seems to be 1920 x 1080
+# # half of that keeps things more manageable for on-screen debugging
+# #
+# camera = picamera.PiCamera()
+# photoHeight = 540
+# camera.resolution = (16*photoHeight/9, photoHeight)
+# #
+# # captue an image and read it back in
+# # (Do this because picamera does not play nice with openCV?)
+# #
+# camera.capture('blackRoad.jpg')
+imgColor = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
 #
 # convert to grayscale -- this seems to be standard for edge detection
 # but we may ultimately want to do something more fancy to help us find
