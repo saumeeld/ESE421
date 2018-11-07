@@ -5,10 +5,9 @@ import cv2
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from HSV_Functions import filterColor
 
 # Read in image from directory of Penn Park images
-imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
+imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/Picture 41.jpg')
 imgGray = cv2.cvtColor(imgBGR, cv2.COLOR_BGR2GRAY)
 height, width = imgGray.shape
 ranges=(255,25,255) # Range of acceptable HSV values
@@ -38,32 +37,47 @@ upperthres = np.array([min(avgcolor[1]+ranges[0], 255),
 mask = cv2.inRange(imghsv, lowerthres, upperthres)
 ## END RYAN'S CODE
 
-# Perform Canny edge detection 
-edges = cv2.Canny(mask, 100,255)
-
+# Perform Canny edge detection on selected region of interest
+# (Bottom right-hand corner of image)
+edges = cv2.Canny(mask[height/2:height, width/2:width], 100,255)
+cropHeight,cropWidth = edges.shape
+print(cropHeight,cropWidth)
 # Filter detected edges for potential road edges
-minLineLength = 10
-maxLineGap = 1
-lines = cv2.HoughLinesP(edges,rho=1,theta=np.pi/180,threshold=50,
+minLineLength = 40
+maxLineGap = 30
+lines = cv2.HoughLinesP(edges,rho=1,theta=np.pi/180,threshold=20,
     minLineLength=minLineLength,maxLineGap=maxLineGap)
 
 CAMERA_HEIGHT = 13
 CAMERA_FOCAL_LENGTH = 1098.88
 
+y2max = 0
+chosenLine = []
 for x in range(0, len(lines)):
     for x1,y1,x2,y2 in lines[x]:
-        cv2.line(imgBGR,(x1,y1),(x2,y2),(0,0,255),2) # draw the line on the original image
         slope_image = (x2 - x1) * 1.0/ (y2 - y1)
-        x_intercept_computer_coords = x1 - (slope_image * y1)
-        x_intercept_centered_coords = slope_image * (height/2) + x_intercept_computer_coords - (width/2)
-        
-        offset = slope_image * CAMERA_HEIGHT
-        psi_r = math.degrees(math.atan(x_intercept_centered_coords/CAMERA_FOCAL_LENGTH))
-        if y2 > 250:
-            print("Slope in image: {} Unshifted Intercept: {} Shifted Intercept: {} x1: {} x2: {} y1: {} y2: {}".format(slope_image, x_intercept_computer_coords, x_intercept_centered_coords, x1, x2, y1, y2))
-            print("Estimated Offset: {0:.2f}".format(offset))
-            print("Estimated Psi_r: {0:.2f}".format(psi_r))
+        if slope_image < 0:
+            if y2 > y2max:
+                y2max = y2
+                chosenLine = lines[x]
 
+x1 =chosenLine[0]
+x2 =chosenLine[1]
+y1 =chosenLine[3]
+y2 =chosenLine[4]
+
+cv2.line(imgBGR,(width/2+x1,y1+(height/2)),(width/2+x2,y2+(height/2)),(255,0,0),3) # draw the line on the original image
+x_intercept_computer_coords = x1 - (slope_image * y1)
+x_intercept_centered_coords = slope_image * (height/2) + x_intercept_computer_coords - (width/2)
+
+offset = slope_image * CAMERA_HEIGHT
+psi_r = math.degrees(math.atan(x_intercept_centered_coords/CAMERA_FOCAL_LENGTH))
+print("Slope in image: {} Unshifted Intercept: {} Shifted Intercept: {} x1: {} x2: {} y1: {} y2: {}".format(slope_image, x_intercept_computer_coords, x_intercept_centered_coords, x1, x2, y1, y2))
+print("Estimated Offset: {0:.2f}".format(offset))
+print("Estimated Psi_r: {0:.2f}".format(psi_r))
+
+# plt.imshow(imgBGR)
+# plt.title('Detected Road Edge')
 # Plot progressive road detection steps
 fig = plt.figure()
 a = fig.add_subplot(2, 2, 1)
