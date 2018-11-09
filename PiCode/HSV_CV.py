@@ -5,8 +5,26 @@ import cv2
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+# import picamera
+
+# UNCOMMENT ALL OF THIS IF YOU WANT TO ANALYZE PICTURES TAKEN BY THE PI
+# # Set up the camera
+# # default photo seems to be 1920 x 1080
+# # half of that keeps things more manageable for on-screen debugging
+# #
+# camera = picamera.PiCamera()
+# photoHeight = 540
+# camera.resolution = (16*photoHeight/9, photoHeight)
+
+# # Capture an image and read it back in
+# # (Do this because picamera does not play nice with openCV?)
+# camera.capture('piPicture.jpg')
+# imgBGR = cv2.imread('piPicture.jpg')
 
 # Read in image from directory of Penn Park images
+# Change this to where the image 
+
+# Read on
 imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/Picture 41.jpg')
 imgGray = cv2.cvtColor(imgBGR, cv2.COLOR_BGR2GRAY)
 height, width = imgGray.shape
@@ -39,7 +57,9 @@ mask = cv2.inRange(imghsv, lowerthres, upperthres)
 
 # Perform Canny edge detection on selected region of interest
 # (Bottom right-hand corner of image)
-edges = cv2.Canny(mask[height/2:height, width/2:width], 100,255)
+heightOffset = height/2
+widthOffset = width/2
+edges = cv2.Canny(mask[heightOffset:height, widthOffset:width], 100,255)
 cropHeight,cropWidth = edges.shape
 print(cropHeight,cropWidth)
 # Filter detected edges for potential road edges
@@ -51,45 +71,58 @@ lines = cv2.HoughLinesP(edges,rho=1,theta=np.pi/180,threshold=20,
 CAMERA_HEIGHT = 13
 CAMERA_FOCAL_LENGTH = 1098.88
 
-y2max = 0
-chosenLine = []
+# WIP Code that will select the "most likely line" based on heuristics
+# y2max = 0
+# chosenLine = []
+# for x in range(0, len(lines)):
+#     for x1,y1,x2,y2 in lines[x]:
+#         slope_image = (x2 - x1) * 1.0/ (y2 - y1)
+#         if slope_image < 0:
+#             if y2 > y2max:
+#                 y2max = y2
+#                 chosenLine = lines[x]
+
+# x1 =chosenLine[0]
+# x2 =chosenLine[1]
+# y1 =chosenLine[3]
+# y2 =chosenLine[4]
+
 for x in range(0, len(lines)):
     for x1,y1,x2,y2 in lines[x]:
+        # Draw the line on the original image
+        cv2.line(imgBGR,(widthOffset+x1,heightOffset+y1),(widthOffset+x2,heightOffset+y2),(255,0,0),2) 
         slope_image = (x2 - x1) * 1.0/ (y2 - y1)
-        if slope_image < 0:
-            if y2 > y2max:
-                y2max = y2
-                chosenLine = lines[x]
+        x_intercept_computer_coords = x1 - (slope_image * y1)
+        x_intercept_centered_coords = slope_image * (height/2) + x_intercept_computer_coords - (width/2)
+        
+        offset = slope_image * CAMERA_HEIGHT
+        psi_r = math.degrees(math.atan(x_intercept_centered_coords/CAMERA_FOCAL_LENGTH))
 
-x1 =chosenLine[0]
-x2 =chosenLine[1]
-y1 =chosenLine[3]
-y2 =chosenLine[4]
-
-cv2.line(imgBGR,(width/2+x1,y1+(height/2)),(width/2+x2,y2+(height/2)),(255,0,0),3) # draw the line on the original image
-x_intercept_computer_coords = x1 - (slope_image * y1)
-x_intercept_centered_coords = slope_image * (height/2) + x_intercept_computer_coords - (width/2)
-
-offset = slope_image * CAMERA_HEIGHT
-psi_r = math.degrees(math.atan(x_intercept_centered_coords/CAMERA_FOCAL_LENGTH))
 print("Slope in image: {} Unshifted Intercept: {} Shifted Intercept: {} x1: {} x2: {} y1: {} y2: {}".format(slope_image, x_intercept_computer_coords, x_intercept_centered_coords, x1, x2, y1, y2))
 print("Estimated Offset: {0:.2f}".format(offset))
 print("Estimated Psi_r: {0:.2f}".format(psi_r))
 
-# plt.imshow(imgBGR)
-# plt.title('Detected Road Edge')
-# Plot progressive road detection steps
+
+
+# Plot debugging graphs
+plt.imshow(imgBGR)
+plt.title('Detected Road Edge')
+
 fig = plt.figure()
 a = fig.add_subplot(2, 2, 1)
+# Original color image with detected line plotted on it
 imgplot = plt.imshow(imgBGR)
 a.set_title('RGB ')
 a = fig.add_subplot(2, 2, 2)
+# Image in HSV space
 imgplot = plt.imshow(imghsv)
 a.set_title('HSV')
 a = fig.add_subplot(2, 2, 3)
+# Thresholded HSV Mask
 imgplot = plt.imshow(mask)
 a.set_title('HSV Thresholded')
 a = fig.add_subplot(2, 2, 4)
+# Edges detected within region of interest of the thresholded mask
 imgplot = plt.imshow(edges)
 a.set_title('HSV Edges')
 plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.25,
