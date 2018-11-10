@@ -102,8 +102,6 @@ print("Slope in image: {} Unshifted Intercept: {} Shifted Intercept: {} x1: {} x
 print("Estimated Offset: {0:.2f}".format(offset))
 print("Estimated Psi_r: {0:.2f}".format(psi_r))
 
-
-
 # Plot debugging graphs
 plt.imshow(imgBGR)
 plt.title('Detected Road Edge')
