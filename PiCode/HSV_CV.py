@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 # Change this to where the image 
 
 # Read on
-imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
+imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/IMG_9153.jpg')
 imgGray = cv2.cvtColor(imgBGR, cv2.COLOR_BGR2GRAY)
 height, width = imgGray.shape
 ranges=(255,25,255) # Range of acceptable HSV values
@@ -105,7 +105,7 @@ cv2.putText(imgBGR,"Estimated Offset: {0:.2f}".format(offset),(50,400),font,font
 cv2.putText(imgBGR,"Estimated Psi_R: {0:.2f}".format(psi_r),(50,450),font,fontScale,fontColor,lineType)
 
 # Draw the line on the original image
-cv2.line(imgBGR,(x1,y1),(x2,y2),(255,0,0),2)
+cv2.line(imgBGR,(x1,y1),(x2,y2),(255,0,0),4)
 
 print("Slope in image: {} Unshifted Intercept: {} Shifted Intercept: {} x1: {} x2: {} y1: {} y2: {}".format(slope_image, x_intercept_computer_coords, x_intercept_centered_coords, x1, x2, y1, y2))
 print("Estimated Offset: {0:.2f}".format(offset))
@@ -115,25 +115,25 @@ print("Estimated Psi_r: {0:.2f}".format(psi_r))
 plt.imshow(imgBGR)
 plt.title('Detected Road Edge')
 
-# fig = plt.figure()
-# a = fig.add_subplot(2, 2, 1)
-# # Original color image with detected line plotted on it
-# imgplot = plt.imshow(imgBGR)
-# a.set_title('RGB ')
-# a = fig.add_subplot(2, 2, 2)
-# # Image in HSV space
-# imgplot = plt.imshow(imghsv)
-# a.set_title('HSV')
-# a = fig.add_subplot(2, 2, 3)
-# # Thresholded HSV Mask
-# imgplot = plt.imshow(mask)
-# a.set_title('HSV Thresholded')
-# a = fig.add_subplot(2, 2, 4)
-# # Edges detected within region of interest of the thresholded mask
-# imgplot = plt.imshow(edges)
-# a.set_title('HSV Edges')
-# plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.25,
-#                     wspace=0.35)
+fig = plt.figure()
+a = fig.add_subplot(2, 2, 1)
+# Original color image with detected line plotted on it
+imgplot = plt.imshow(imgBGR)
+a.set_title('RGB ')
+a = fig.add_subplot(2, 2, 2)
+# Image in HSV space
+imgplot = plt.imshow(imghsv)
+a.set_title('HSV')
+a = fig.add_subplot(2, 2, 3)
+# Thresholded HSV Mask
+imgplot = plt.imshow(mask)
+a.set_title('HSV Thresholded')
+a = fig.add_subplot(2, 2, 4)
+# Edges detected within region of interest of the thresholded mask
+imgplot = plt.imshow(edges)
+a.set_title('HSV Edges')
+plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.25,
+                    wspace=0.35)
 plt.show(block=True)
 
 # TODO: Feedback "expected" value of PsiR and Xo to compare with detected (low pass filter)
