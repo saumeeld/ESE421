@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "PiCode"
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}
