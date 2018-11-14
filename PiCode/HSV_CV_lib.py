@@ -4,7 +4,9 @@ import cv2
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-import picamera
+
+
+# import picamera
 
 # UNCOMMENT ALL OF THIS IF YOU WANT TO ANALYZE PICTURES TAKEN BY THE PI
 # # Set up the camera
@@ -23,9 +25,8 @@ import picamera
 # Read in image from directory of Penn Park images
 # Change this to where the image 
 
-# Read on
 
-def debug_chosen_line(offset, psi_r, chosenLine):
+def debug_chosen_line(offset, psi_r, chosenLine, imgBGR):
     x1 = chosenLine[0]
     y1 = chosenLine[1]
     x2 = chosenLine[2]
@@ -63,8 +64,11 @@ def perform_image_transformations(imgBGR):
 
 
 def get_CV_results(imgBGR, imgGray, imghsv):
-    
-    height, width = imgBGR.shape
+    ranges=(100,25,100) # Range of acceptable HSV values
+    frontpoint = (0.5, 0.1) # fractions of total resolution in (x,y)
+    avgsize = 5 # number of pixels to average
+    blursize = 25
+    height, width = imgBGR.shape[0:2]
     
     ## THIS CODE IS COURTESY OF RYAN KORTVELESY
     # Get color of road
@@ -164,11 +168,12 @@ def plot_data(imgBGR, imghsv, mask, edges):
 def main():
     CAMSTORE_FILENAME = 'piPicture.jpg'
     PHOTO_HEIGHT = 540
-    camera = init_camera(PHOTO_HEIGHT)
-    imgBGR = capture_image(camera, CAMSTORE_FILENAME)
+    # camera = init_camera(PHOTO_HEIGHT)
+    # imgBGR = capture_image(camera, CAMSTORE_FILENAME)
+    imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
     imgGray, imghsv = perform_image_transformations(imgBGR)
     offset, psi_r, chosenLine, edges, mask = get_CV_results(imgBGR, imgGray, imghsv)
-    debug_chosen_line(offset, psi_r, chosenLine)
+    debug_chosen_line(offset, psi_r, chosenLine, imgBGR)
     plot_data(imgBGR, imghsv, mask, edges)
     return
     
