@@ -1,11 +1,10 @@
-#!/usr/bin/env python2
 
 # Code to detect Xo and PsiR from pictures of Penn Park roads taken from Pi Camera 
 import cv2
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-# import picamera
+import picamera
 
 # UNCOMMENT ALL OF THIS IF YOU WANT TO ANALYZE PICTURES TAKEN BY THE PI
 # # Set up the camera
@@ -25,10 +24,15 @@ import matplotlib.pyplot as plt
 # Change this to where the image 
 
 # Read on
-imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
+camera = picamera.PiCamera()
+photoHeight = 540
+camera.resolution = (16*photoHeight/9, photoHeight)
+camera.capture('piPicture.jpg')
+
+imgBGR = cv2.imread('piPicture.jpg') #cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
 imgGray = cv2.cvtColor(imgBGR, cv2.COLOR_BGR2GRAY)
 height, width = imgGray.shape
-ranges=(255,25,255) # Range of acceptable HSV values
+ranges=(100,25,100) # Range of acceptable HSV values
 frontpoint = (0.5, 0.1) # fractions of total resolution in (x,y)
 avgsize = 5 # number of pixels to average
 blursize = 25
