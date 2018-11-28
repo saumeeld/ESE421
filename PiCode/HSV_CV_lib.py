@@ -3,22 +3,20 @@ import cv2
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-
-
-# import picamera
+import picamera
 
 # UNCOMMENT ALL OF THIS IF YOU WANT TO ANALYZE PICTURES TAKEN BY THE PI
-# # Set up the camera
+# Set up the camera
 # # default photo seems to be 1920 x 1080
 # # half of that keeps things more manageable for on-screen debugging
 # #
-# camera = picamera.PiCamera()
-# photoHeight = 540
-# camera.resolution = (16*photoHeight/9, photoHeight)
+##camera = picamera.PiCamera()
+##photoHeight = 540
+##camera.resolution = (16*photoHeight/9, photoHeight)
 
 # # Capture an image and read it back in
 # # (Do this because picamera does not play nice with openCV?)
-# camera.capture('piPicture.jpg')
+#camera.capture('piPicture.jpg')
 # imgBGR = cv2.imread('piPicture.jpg')
 
 # Read in image from directory of Penn Park images
@@ -134,8 +132,10 @@ def init_camera(photoHeight):
 
 def capture_image(camera, camstore_filename):
     camera.capture(camstore_filename)
-    imgBGR = cv2.imread(camstore_filename) #cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
-
+    imgBGR = cv2.imread(camstore_filename)
+    return imgBGR
+    #cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
+    #cv2.imshow('captured Image',imgBGR)
 
 # Plot debugging graphs
 def plot_data(imgBGR, imghsv, mask, edges):
@@ -167,9 +167,9 @@ def plot_data(imgBGR, imghsv, mask, edges):
 def main():
     CAMSTORE_FILENAME = 'piPicture.jpg'
     PHOTO_HEIGHT = 540
-    # camera = init_camera(PHOTO_HEIGHT)
-    # imgBGR = capture_image(camera, CAMSTORE_FILENAME)
-    imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
+    camera = init_camera(PHOTO_HEIGHT)
+    imgBGR = capture_image(camera, CAMSTORE_FILENAME)
+    #imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
     imgGray, imghsv = perform_image_transformations(imgBGR)
     offset, psi_r, chosenLine, edges, mask = get_CV_results(imgBGR, imgGray, imghsv)
     debug_chosen_line(offset, psi_r, chosenLine, imgBGR)
