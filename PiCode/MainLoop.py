@@ -11,7 +11,8 @@ def main():
     camera = init_camera(540)
     #imgBGR = cv2.imread('../PennParkImages/curvingRoad.jpg')
     while True:
-        imgBGR = capture_image(camera, "PiPic.jpg")
+	string = "/Images/PiPic" + "%s.jpg" % (datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + ".jpg"
+        imgBGR = capture_image(camera, string)
         imgGray, imghsv = perform_image_transformations(imgBGR)
         offset, psi_r, chosenLine, edges, mask = get_CV_results(imgBGR, imgGray, imghsv)
         debug_chosen_line(offset, psi_r, chosenLine, imgBGR)
