@@ -14,11 +14,15 @@
 float offsetCamera;
 float psiCamera;
 
+extern float psiEst;
+extern boolean psiEstInitialized;
+
 I2C::I2C(int slaveAddress)
 {
     _slaveAddress = slaveAddress;
     Wire.begin(_slaveAddress);
     Wire.onReceive(receiveData);
+    Serial.println();
     //Wire.onRequest(sendData);
 }
 
@@ -57,6 +61,11 @@ void I2C::receiveData(int bytesReceived)
         case 'H' :
             psiCamera = floatReceived;
             Serial.print("The received camera heading is: "); Serial.println(psiCamera,3);
+            if (!psiEstInitialized) {
+              Serial.println("psiEst has been initalized");
+              psiEst = psiCamera;
+              psiEstInitialized = true;
+            }
             break; 
     }
 
