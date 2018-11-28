@@ -22,6 +22,10 @@ float pingDistanceCM = 0.0;
 extern float psiCamera;
 extern float offsetCamera;
 
+//
+float psiEst;
+boolean psiEstInitialized = false;
+
 // DEFINE PIN LAYOUT
 
 // Define pins for IMU
@@ -51,7 +55,7 @@ Adafruit_LSM9DS1 lsm = Adafruit_LSM9DS1(LSM9DS1_XGCS, LSM9DS1_MCS);
 
 // Define Servo Pin
 #define STEERING_SERVO_PIN 7
-#define SERVO_RIGGING_ANGLE 54
+#define SERVO_RIGGING_ANGLE 63
 Servo steeringServo;
 
 // Initialize Motor PWM
@@ -73,7 +77,7 @@ void setup() {
   pinMode(pingTrigPin, OUTPUT);
   pinMode(pingEchoPin, INPUT);
   pinMode(motorPin, OUTPUT);
-  analogWrite(motorPin, 0);
+
 
   // Define pins for steering servo
   steeringServo.attach(STEERING_SERVO_PIN);
@@ -110,25 +114,27 @@ SIGNAL(TIMER0_COMPA_vect) {
 
 //////////////////////////////////////////////////////////////////
 void loop() {
+   if (psiEstInitialized) {
+    // Emergency stop code
+    emergencyStopIfNecessary();
   
-  //Initialize Estimation Variables
-  static float psiEst = 0;
+    float yawRate = getIMUData();
   
-  // Emergency stop code
-  emergencyStopIfNecessary();
-
-  float yawRate = getIMUData();
-
-  // Correct vehicle heading if not straight
-  //psiEst = estimateHeading(yawRate, psiCamera, LOOP_TIME, psiEst);
-  psiEst += yawRate * LOOP_TIME*MILLISECONDS_TO_SECONDS;
-  fixHeading(psiEst, steeringServo);
+    // Correct vehicle heading if not straight
+    psiEst = estimateHeading(yawRate, psiCamera, LOOP_TIME, psiEst);
+    //psiEst += yawRate * LOOP_TIME*MILLISECONDS_TO_SECONDS;
+    fixHeading(psiEst, steeringServo);
+    
+    //Serial.print("The estimated Psi (psiEst) is : ");
+    //Serial.println(psiEst);
   
-  //Serial.print("The estimated Psi (psiEst) is : ");
-  //Serial.println(psiEst);
+    //  wait updateTime milliseconds
+    delay(LOOP_TIME);
+   }
+}
 
-  //  wait updateTime milliseconds
-  delay(LOOP_TIME);
+void startDriving() {
+    analogWrite(motorPin, motorPWM);
 }
 
 float constrainAngle(float angle) {
@@ -148,7 +154,7 @@ void fixHeading(float psiEst, Servo steeringServo) {
   float k_heading = 0.6;
   // TODO: DOULE CHECK LOGIC 
   float servo_angle_deg = SERVO_RIGGING_ANGLE + k_heading * psiEst;
-  float servo_actual = constrain(servo_angle_deg, SERVO_RIGGING_ANGLE - 50, SERVO_RIGGING_ANGLE + 50);
+  float servo_actual = constrain(servo_angle_deg, SERVO_RIGGING_ANGLE - 40, SERVO_RIGGING_ANGLE + 40);
   steeringServo.write(servo_actual);
   //Serial.print("Servo angle " );
   //Serial.println(servo_actual);
