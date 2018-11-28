@@ -6,7 +6,7 @@ import math
 import matplotlib.pyplot as plt
 
 
-# import picamera
+import picamera
 
 # UNCOMMENT ALL OF THIS IF YOU WANT TO ANALYZE PICTURES TAKEN BY THE PI
 # # Set up the camera
@@ -42,9 +42,9 @@ def debug_chosen_line(offset, psi_r, chosenLine, imgBGR):
     # Draw the line on the original image
     cv2.line(imgBGR,(x1,y1),(x2,y2),(255,0,0),4)
 
-    print("x1: {} x2: {} y1: {} y2: {}".format(x1, x2, y1, y2))
-    print("Estimated Offset: {0:.2f}".format(offset))
-    print("Estimated Psi_r: {0:.2f}".format(psi_r))
+##    print("x1: {} x2: {} y1: {} y2: {}".format(x1, x2, y1, y2))
+##    print("Estimated Offset: {0:.2f}".format(offset))
+##    print("Estimated Psi_r: {0:.2f}".format(psi_r))
 
     
 def perform_image_transformations(imgBGR):
@@ -84,6 +84,9 @@ def get_CV_results(imgBGR, imgGray, imghsv):
         max(avgcolor[1]-ranges[1], 0), max(avgcolor[2]-ranges[2], 0)], dtype=np.uint8)
     upperthres = np.array([min(avgcolor[1]+ranges[0], 255), 
         min(avgcolor[1]+ranges[1], 255), min(avgcolor[2]+ranges[2], 255)], dtype=np.uint8)
+    # Orange Detection
+    lowerthres = np.array([0,100,100],dtype=np.uint8)
+    upperthres = np.array([100,200,255], dtype=np.uint8)
     mask = cv2.inRange(imghsv, lowerthres, upperthres)
     ## END RYAN'S CODE
 
@@ -136,6 +139,7 @@ def init_camera(photoHeight):
 def capture_image(camera, camstore_filename):
     camera.capture(camstore_filename)
     imgBGR = cv2.imread(camstore_filename) #cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
+    return imgBGR
 
 
 # Plot debugging graphs
@@ -176,6 +180,7 @@ def main():
     debug_chosen_line(offset, psi_r, chosenLine, imgBGR)
     plot_data(imgBGR, imghsv, mask, edges)
     return
+
     
 
 if __name__ == "__main__":
