@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-import picamera
+# import picamera
 
 # UNCOMMENT ALL OF THIS IF YOU WANT TO ANALYZE PICTURES TAKEN BY THE PI
 # # Set up the camera
