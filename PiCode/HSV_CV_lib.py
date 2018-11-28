@@ -84,8 +84,13 @@ def get_CV_results(imgBGR, imgGray, imghsv):
         max(avgcolor[1]-ranges[1], 0), max(avgcolor[2]-ranges[2], 0)], dtype=np.uint8)
     upperthres = np.array([min(avgcolor[1]+ranges[0], 255), 
         min(avgcolor[1]+ranges[1], 255), min(avgcolor[2]+ranges[2], 255)], dtype=np.uint8)
+<<<<<<< HEAD
     # Orange Detection
     lowerthres = np.array([0,100,100],dtype=np.uint8)
+=======
+    # Hard-coded thresholds for orange in hsv space
+    lowerthres = np.array([0,100,100], dtype=np.uint8)
+>>>>>>> 291891756c608d3692d23faffbd508219f88e59f
     upperthres = np.array([100,200,255], dtype=np.uint8)
     mask = cv2.inRange(imghsv, lowerthres, upperthres)
     ## END RYAN'S CODE
@@ -93,7 +98,7 @@ def get_CV_results(imgBGR, imgGray, imghsv):
     # Perform Canny edge detection on selected region of interest
     # (Bottom right-hand corner of image)
     heightOffset = height/2
-    widthOffset = width/2
+    widthOffset = 0
     edges = cv2.Canny(mask[heightOffset:height, widthOffset:width], 100,255)
 
     # Print out dimensions of cropped image
@@ -119,12 +124,11 @@ def get_CV_results(imgBGR, imgGray, imghsv):
             x_intercept_computer_coords = x1 - (slope_image * y1)
             x_intercept_centered_coords = slope_image * (height/2) + x_intercept_computer_coords - (width/2)
 
-            if slope_image > 0 and y2 > y2max:
-                y2max = y2
-                chosenLine = [x1,y1,x2,y2]
-                # Calculate Xo and PsiR
-                offset = slope_image * CAMERA_HEIGHT
-                psi_r = math.degrees(math.atan(x_intercept_centered_coords/CAMERA_FOCAL_LENGTH))
+            offset = slope_image * CAMERA_HEIGHT
+            psi_r = math.degrees(math.atan(x_intercept_centered_coords/CAMERA_FOCAL_LENGTH))
+            # Draw the line on the original image
+            cv2.line(imgBGR,(x1,y1),(x2,y2),(255,0,0),4)
+            chosenLine = [1,2,3,4]
     
     return offset, psi_r, chosenLine, edges, mask
 
@@ -174,14 +178,17 @@ def main():
     PHOTO_HEIGHT = 540
     # camera = init_camera(PHOTO_HEIGHT)
     # imgBGR = capture_image(camera, CAMSTORE_FILENAME)
-    imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PennParkImages/curvingRoad.jpg')
+    imgBGR = cv2.imread('/Users/adnanjafferjee/ESE421/PlatoonTestData/LinearOffset0".jpg')
     imgGray, imghsv = perform_image_transformations(imgBGR)
     offset, psi_r, chosenLine, edges, mask = get_CV_results(imgBGR, imgGray, imghsv)
     debug_chosen_line(offset, psi_r, chosenLine, imgBGR)
     plot_data(imgBGR, imghsv, mask, edges)
     return
+<<<<<<< HEAD
 
     
+=======
+>>>>>>> 291891756c608d3692d23faffbd508219f88e59f
 
 if __name__ == "__main__":
     main()
