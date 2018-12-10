@@ -63,6 +63,7 @@ void I2C::receiveData(int bytesReceived)
             Serial.print("The received camera heading is: "); Serial.println(psiCamera,3);
             if (!psiEstInitialized) {
               Serial.println("psiEst has been initalized");
+              Serial.print("Initial psi is: ");Serial.println(psiCamera);
               psiEst = psiCamera;
               psiEstInitialized = true;
             }

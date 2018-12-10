@@ -45,10 +45,10 @@ boolean psiEstInitialized = false;
 #define motorPin 8 //PWM for motor
 
 // Define Taus for Complementary Filters
-#define TAU_PSI 1
+#define TAU_PSI 5
 
 // Define delta time for integration
-#define LOOP_TIME 1000
+#define LOOP_TIME 20
 
 // Tell sensor library which pins for accel & gyro data
 Adafruit_LSM9DS1 lsm = Adafruit_LSM9DS1(LSM9DS1_XGCS, LSM9DS1_MCS);
@@ -59,7 +59,7 @@ Adafruit_LSM9DS1 lsm = Adafruit_LSM9DS1(LSM9DS1_XGCS, LSM9DS1_MCS);
 Servo steeringServo;
 
 // Initialize Motor PWM
-byte motorPWM = 125;
+byte motorPWM = 65;
 
 // connect GPS to Hardware Serial1 (Serial0 is for USB)
 // Serial1 is pins 18 & 19 on Mega
@@ -114,7 +114,11 @@ SIGNAL(TIMER0_COMPA_vect) {
 
 //////////////////////////////////////////////////////////////////
 void loop() {
+  int timeEndLoop = 0;
+  int timeStartLoop = 0;
+  int timeStartOld = 0;
    if (psiEstInitialized) {
+    
     // Emergency stop code
     emergencyStopIfNecessary();
   
@@ -123,11 +127,15 @@ void loop() {
     // Correct vehicle heading if not straight
     psiEst = estimateHeading(yawRate, psiCamera, LOOP_TIME, psiEst);
     //psiEst += yawRate * LOOP_TIME*MILLISECONDS_TO_SECONDS;
+    
+//    Serial.print("Yaw Rate: ");Serial.println(yawRate);
+//    Serial.print("Psi Camera: ");Serial.println(psiCamera);
+    Serial.print("Psi_est: ");Serial.println(psiEst);
     fixHeading(psiEst, steeringServo);
     
     //Serial.print("The estimated Psi (psiEst) is : ");
     //Serial.println(psiEst);
-  
+
     //  wait updateTime milliseconds
     delay(LOOP_TIME);
    }
@@ -145,7 +153,7 @@ float constrainAngle(float angle) {
 }
 
 // Complementarty filter implementation to estimate vehicle heading
-float estimateHeading(float yawRate, byte psiCamera, int loopTime, float psiEst) {
+float estimateHeading(float yawRate, float psiCamera, int loopTime, float psiEst) {
   return complementaryFilter(psiCamera, yawRate, TAU_PSI, loopTime, psiEst);
 }
 
@@ -164,6 +172,9 @@ void fixHeading(float psiEst, Servo steeringServo) {
 // Function to estimate a value a low frequency input and high frequency rate input
 float complementaryFilter(float lowFrequencyInput, float highFrequencyInputRate, float tau, int loopTime, float estimate) {
   float deltaEstimate = (1 / tau) * (lowFrequencyInput + tau * highFrequencyInputRate);
+  Serial.print("LF Input: ");Serial.println(lowFrequencyInput);
+  Serial.print("HF Input Rate: ");Serial.println(highFrequencyInputRate);
+  //Serial.print("Delta Estimate: ");Serial.println(estimate);
   estimate += deltaEstimate * loopTime * MILLISECONDS_TO_SECONDS;
   return estimate;
 }
