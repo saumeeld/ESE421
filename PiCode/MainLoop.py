@@ -18,7 +18,7 @@ def main():
         imgGray, imghsv = perform_image_transformations(imgBGR)
         offset, psi_r, chosenLine, edges, mask = get_CV_results(imgBGR, imgGray, imghsv)
         debug_chosen_line(offset, psi_r, chosenLine, imgBGR)
-##        plot_data(imgBGR, imghsv, mask, edges)
+        plot_data(imgBGR, imghsv, mask, edges)
         offsetCam = numToByteArray(offset)
         psiCam = numToByteArray(psi_r)
         offsetCam.append(ord('O'))

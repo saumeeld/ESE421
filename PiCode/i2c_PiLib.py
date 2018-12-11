@@ -11,16 +11,15 @@ import time
 # 1 = command byte to request first data block from Arduino
 # 8 = number of bytes (one 4-byte float + one 2-byte word)
 #
-def getByteList(oldFloats):
+def getByteList():
     try:
         data_received = bus.read_i2c_block_data(address, 1, 10)
         print("Data data_received from Arduino: %s", byteArrayToString(data_received)) 
         return float(byteArrayToString(data_received))
     except:
         print("error reading float data")
-        newFloats = oldFloats;
         
-    return "ERR"
+    return -1
     #return newFloats
 
 
