@@ -22,8 +22,7 @@ I2C::I2C(int slaveAddress)
     _slaveAddress = slaveAddress;
     Wire.begin(_slaveAddress);
     Wire.onReceive(receiveData);
-    Serial.println();
-    //Wire.onRequest(sendData);
+    Wire.onRequest(sendData);
 }
 
 void I2C::receiveData(int bytesReceived)
@@ -74,6 +73,23 @@ void I2C::receiveData(int bytesReceived)
     // now clear the buffer, just in case
     //
     while (Wire.available()) {Wire.read();}
+}
+
+void I2c::sendData() {
+  Serial.print("NOTIFICATION: Sending Data To Pi");
+  
+  if (piCommand == SEND_STRING_COMMAND) {
+    //Serialize data and send over arduino
+    Serial.print("Got a request to send a serialized float");
+    char stringBuffer[STRING_SIZE];
+    String serializedNumber = String(psiEst);
+    serializedNumber.toCharArray(stringBuffer, STRING_SIZE);
+
+    Wire.write((byte*) stringBuffer, STRING_SIZE); //character is 1 byte
+  }
+  else {
+    Serial.print("Received an unknown command");
+  }
 }
 
 float I2C::convertByteArrayToFloat(byte serializedFloat[])

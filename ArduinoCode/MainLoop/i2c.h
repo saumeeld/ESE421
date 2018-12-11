@@ -13,7 +13,7 @@ class I2C
   public:
     I2C(int slaveAddress);
     static void receiveData(int bytesReceived);
-    //static void sendData();
+    static void sendData();
   private:
     int _slaveAddress;
     static float convertByteArrayToFloat(byte serializedFloat[]);

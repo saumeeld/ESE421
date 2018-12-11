@@ -29,6 +29,8 @@ def main():
         putByteList(offsetCam) #send the offset
         time.sleep(1)
         putByteList(psiCam) #send the angle 
+        time.sleep(3)
+        print("Psi Est is: %f", getByteList())
 
 if __name__ == "__main__":
     main()
