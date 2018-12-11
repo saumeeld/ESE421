@@ -59,7 +59,7 @@ Adafruit_LSM9DS1 lsm = Adafruit_LSM9DS1(LSM9DS1_XGCS, LSM9DS1_MCS);
 Servo steeringServo;
 
 // Initialize Motor PWM
-byte motorPWM = 65;
+byte motorPWM = 80;
 
 // connect GPS to Hardware Serial1 (Serial0 is for USB)
 // Serial1 is pins 18 & 19 on Mega
@@ -159,19 +159,18 @@ float estimateHeading(float yawRate, float psiCamera, int loopTime, float psiEst
 
 // Correct heading using proportional feedback
 void fixHeading(float psiEst, Servo steeringServo) {
-  float k_heading = 0.6;
+  float k_heading = 5;
   // TODO: DOULE CHECK LOGIC 
   float servo_angle_deg = SERVO_RIGGING_ANGLE + k_heading * psiEst;
   float servo_actual = constrain(servo_angle_deg, SERVO_RIGGING_ANGLE - 40, SERVO_RIGGING_ANGLE + 40);
   steeringServo.write(servo_actual);
-  //Serial.print("Servo angle " );
-  //Serial.println(servo_actual);
+  Serial.print("Servo angle " ); Serial.println(servo_actual);
 }
 
 
 // Function to estimate a value a low frequency input and high frequency rate input
 float complementaryFilter(float lowFrequencyInput, float highFrequencyInputRate, float tau, int loopTime, float estimate) {
-  float deltaEstimate = (1 / tau) * (lowFrequencyInput + tau * highFrequencyInputRate);
+  float deltaEstimate = (1 / tau) * (lowFrequencyInput + tau * highFrequencyInputRate - estimate);
   Serial.print("LF Input: ");Serial.println(lowFrequencyInput);
   Serial.print("HF Input Rate: ");Serial.println(highFrequencyInputRate);
   //Serial.print("Delta Estimate: ");Serial.println(estimate);
