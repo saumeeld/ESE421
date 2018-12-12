@@ -13,9 +13,10 @@ import time
 #
 def getByteList():
     try:
-        data_received = bus.read_i2c_block_data(address, 1, 10)
-        print("Data data_received from Arduino: %s", byteArrayToString(data_received)) 
-        return float(byteArrayToString(data_received))
+        data_received = bus.read_i2c_block_data(address, 1, 4)
+        newFloats = bytes_2_float(data_received, 0)
+##        print("Data data_received from Arduino: %s", byteArrayToString(data_received)) 
+        return newFloats
     except:
         print("error reading float data")
         
@@ -29,8 +30,6 @@ def getByteList():
 #
 def putByteList(byteList):
     try:
-        print(address)
-        print(byteList)
         bus.write_i2c_block_data(address, 255, byteList)
     except:
         print("error writing commands")
@@ -84,6 +83,14 @@ bus = smbus.SMBus(1)
 #
 address = 0x04
 
+def main():
+    while(1):
+        time.sleep(.1)
+        print(getByteList())
+    
+
+if __name__ == "__main__":
+    main()
 
 
 
