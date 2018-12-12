@@ -130,7 +130,7 @@ void loop() {
     
 //    Serial.print("Yaw Rate: ");Serial.println(yawRate);
 //    Serial.print("Psi Camera: ");Serial.println(psiCamera);
-    Serial.print("Psi_est: ");Serial.println(psiEst);
+//    Serial.print("Psi_est: ");Serial.println(psiEst);
     fixHeading(psiEst, steeringServo);
     
     //Serial.print("The estimated Psi (psiEst) is : ");
@@ -171,8 +171,8 @@ void fixHeading(float psiEst, Servo steeringServo) {
 // Function to estimate a value a low frequency input and high frequency rate input
 float complementaryFilter(float lowFrequencyInput, float highFrequencyInputRate, float tau, int loopTime, float estimate) {
   float deltaEstimate = (1 / tau) * (lowFrequencyInput + tau * highFrequencyInputRate - estimate);
-  Serial.print("LF Input: ");Serial.println(lowFrequencyInput);
-  Serial.print("HF Input Rate: ");Serial.println(highFrequencyInputRate);
+//  Serial.print("LF Input: ");Serial.println(lowFrequencyInput);
+//  Serial.print("HF Input Rate: ");Serial.println(highFrequencyInputRate);
   //Serial.print("Delta Estimate: ");Serial.println(estimate);
   estimate += deltaEstimate * loopTime * MILLISECONDS_TO_SECONDS;
   return estimate;

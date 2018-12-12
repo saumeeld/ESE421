@@ -10,6 +10,8 @@
 #define OFFSET_TAG 'O'
 #define HEADING_TAG 'H'
 
+byte piCommand;
+
 //Data that comes from Pi
 float offsetCamera;
 float psiCamera;
@@ -27,7 +29,7 @@ I2C::I2C(int slaveAddress)
 
 void I2C::receiveData(int bytesReceived)
 {
-    byte piCommand = Wire.read();
+    piCommand = Wire.read();
 
     //
     // if Pi is sending data, parse it into incoming data array
@@ -75,17 +77,15 @@ void I2C::receiveData(int bytesReceived)
     while (Wire.available()) {Wire.read();}
 }
 
-void I2c::sendData() {
+void I2C::sendData() {
   Serial.print("NOTIFICATION: Sending Data To Pi");
   
   if (piCommand == SEND_STRING_COMMAND) {
     //Serialize data and send over arduino
-    Serial.print("Got a request to send a serialized float");
-    char stringBuffer[STRING_SIZE];
-    String serializedNumber = String(psiEst);
-    serializedNumber.toCharArray(stringBuffer, STRING_SIZE);
-
-    Wire.write((byte*) stringBuffer, STRING_SIZE); //character is 1 byte
+    float dataBuffer[1];
+    dataBuffer[0] = psiEst;
+    Serial.print("Float size: "); Serial.println(sizeof(float));
+    Wire.write((byte*)&dataBuffer[0], sizeof(float));
   }
   else {
     Serial.print("Received an unknown command");
