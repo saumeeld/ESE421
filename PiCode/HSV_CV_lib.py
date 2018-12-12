@@ -105,7 +105,6 @@ def get_CV_results(imgBGR, imgGray, imghsv):
     CAMERA_FOCAL_LENGTH = 1098.88
 
     y2max = 0
-    x2max = 0
     for x in range(0, len(lines)):
         for x1,y1,x2,y2 in lines[x]:
             x1 = x1 + widthOffset
@@ -116,7 +115,7 @@ def get_CV_results(imgBGR, imgGray, imghsv):
             x_intercept_computer_coords = x1 - (slope_image * y1)
             x_intercept_centered_coords = slope_image * (height/2) + x_intercept_computer_coords - (width/2)
 
-            if slope_image > 0 and y2 > y2max and x2max > x2max:
+            if slope_image > 0 and y2 > y2max:
                 y2max = y2
                 x2max = x2
                 chosenLine = [x1,y1,x2,y2]
@@ -165,7 +164,7 @@ def plot_data(imgBGR, imghsv, mask, edges):
 ##    a.set_title('HSV Edges')
 ##    plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.25,
 ##                        wspace=0.35)
-    plt.show(block=false)
+    plt.show(block=False)
     plt.pause(3)
     plt.close()
     
